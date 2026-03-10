@@ -1,0 +1,543 @@
+[
+  {
+    "vulnerabilities": [],
+    "ok": true,
+    "dependencyCount": 111,
+    "org": "nap0o",
+    "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.25.1\nignore: {}\npatch: {}\n",
+    "isPrivate": true,
+    "licensesPolicy": {
+      "severities": {},
+      "orgLicenseRules": {
+        "AGPL-1.0": {
+          "licenseType": "AGPL-1.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "AGPL-3.0": {
+          "licenseType": "AGPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "Artistic-1.0": {
+          "licenseType": "Artistic-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "Artistic-2.0": {
+          "licenseType": "Artistic-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CDDL-1.0": {
+          "licenseType": "CDDL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CPOL-1.02": {
+          "licenseType": "CPOL-1.02",
+          "severity": "high",
+          "instructions": ""
+        },
+        "EPL-1.0": {
+          "licenseType": "EPL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "GPL-2.0": {
+          "licenseType": "GPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "GPL-3.0": {
+          "licenseType": "GPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "LGPL-2.0": {
+          "licenseType": "LGPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1": {
+          "licenseType": "LGPL-2.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0": {
+          "licenseType": "LGPL-3.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-1.1": {
+          "licenseType": "MPL-1.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-2.0": {
+          "licenseType": "MPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MS-RL": {
+          "licenseType": "MS-RL",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "SimPL-2.0": {
+          "licenseType": "SimPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        }
+      }
+    },
+    "packageManager": "npm",
+    "ignoreSettings": {
+      "adminOnly": false,
+      "reasonRequired": false,
+      "disregardFilesystemIgnores": false
+    },
+    "summary": "No known vulnerabilities",
+    "filesystemPolicy": false,
+    "uniqueCount": 0,
+    "projectName": "mail-vue",
+    "foundProjectCount": 1,
+    "displayTargetFile": "mail-vue/package-lock.json",
+    "hasUnknownVersions": false,
+    "path": "/home/runner/work/cloud-mail/cloud-mail"
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "SNYK-JS-UNDICI-14943963",
+        "title": "Allocation of Resources Without Limits or Throttling",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:L",
+        "credit": [
+          "Illia Volochii"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<6.23.0",
+            ">=7.0.0-alpha.2 <7.18.2"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "6.23.0",
+          "7.18.2"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 5.3,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "undici",
+        "references": [
+          {
+            "url": "https://github.com/nodejs/undici/commit/b04e3cbb569c1596f86c108e9b52c79d8475dcb3",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/nodejs/undici/commit/d3aafea7a2b3c351970c0c634b7cba8231763ca4",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/nodejs/undici/releases/tag/v6.23.0",
+            "title": "GitHub Release"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "low",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "cvssV3BaseScore": 3.7,
+            "modificationTime": "2026-01-17T02:33:20.194372Z"
+          },
+          {
+            "assigner": "NVD",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2026-01-21T18:26:05.120798Z"
+          },
+          {
+            "assigner": "SUSE",
+            "severity": "low",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "cvssV3BaseScore": 3.7,
+            "modificationTime": "2026-01-27T11:09:55.251052Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-01-15T13:11:49.967756Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:L",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 4.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-15T13:11:49.967756Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "assigner": "Red Hat",
+            "severity": "low",
+            "baseScore": 3.7,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-17T02:33:20.194372Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "NVD",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-21T18:26:05.120798Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "assigner": "SUSE",
+            "severity": "low",
+            "baseScore": 3.7,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-27T11:09:55.251052Z"
+          }
+        ],
+        "description": "## Overview\n[undici](https://www.npmjs.org/package/undici) is an An HTTP/1.1 client, written from scratch for Node.js\n\nAffected versions of this package are vulnerable to Allocation of Resources Without Limits or Throttling via the decompression chain. An attacker can cause high CPU usage and excessive memory allocation by sending HTTP responses with a large number of chained compression steps in the `Content-Encoding` header.\n## Remediation\nUpgrade `undici` to version 6.23.0, 7.18.2 or higher.\n## References\n- [GitHub Commit](https://github.com/nodejs/undici/commit/b04e3cbb569c1596f86c108e9b52c79d8475dcb3)\n- [GitHub Commit](https://github.com/nodejs/undici/commit/d3aafea7a2b3c351970c0c634b7cba8231763ca4)\n- [GitHub Release](https://github.com/nodejs/undici/releases/tag/v6.23.0)\n",
+        "epssDetails": {
+          "percentile": "0.04820",
+          "probability": "0.00019",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-22036"
+          ],
+          "CWE": [
+            "CWE-770"
+          ],
+          "GHSA": [
+            "GHSA-g9mf-h72j-4rw9"
+          ]
+        },
+        "packageName": "undici",
+        "proprietary": false,
+        "creationTime": "2026-01-15T11:21:51.529342Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-01-14T19:51:10Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-01-15T13:11:11.020450Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-01-27T11:09:55.251052Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "medium",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "miniflare@4.20250604.1",
+          "undici@5.29.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.9.5",
+          "miniflare@4.20250712.0",
+          "undici@7.22.0"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "undici",
+        "version": "5.29.0"
+      },
+      {
+        "id": "SNYK-JS-WRANGLER-15046269",
+        "title": "Improper Input Validation",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:H/A:H",
+        "credit": [
+          "kny4hacker"
+        ],
+        "semver": {
+          "vulnerable": [
+            ">=2.0.15 <3.114.17",
+            ">=4.0.0 <4.59.1"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "3.114.17",
+          "4.59.1"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 7.7,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "wrangler",
+        "references": [
+          {
+            "url": "https://github.com/cloudflare/workers-sdk/commit/6d5557ba22fba7d65193276a94cb5b54ead521d9",
+            "title": "GitHub Commit"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+            "cvssV3BaseScore": 9.9,
+            "modificationTime": "2026-01-28T01:19:13.380884Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:L/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:N",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.7,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-01-21T11:52:27.439967Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:H/A:H",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-21T11:52:27.439967Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 9.9,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-28T01:19:13.380884Z"
+          }
+        ],
+        "description": "## Overview\n[wrangler](https://www.npmjs.org/package/wrangler) is a Command-line interface for all things Cloudflare Workers\n\nAffected versions of this package are vulnerable to Improper Input Validation via the `wrangler pages deploy` command when the `--commit-hash` parameter is passed directly to a shell command without proper validation or sanitization. An attacker can execute arbitrary system commands by supplying crafted input to the `--commit-hash` parameter.\n\n**Note:**\n\nThis is only exploitable if the `--commit-hash` parameter is attacker-controlled, such as in CI/CD environments where it is populated from untrusted sources.\n## Remediation\nUpgrade `wrangler` to version 3.114.17, 4.59.1 or higher.\n## References\n- [GitHub Commit](https://github.com/cloudflare/workers-sdk/commit/6d5557ba22fba7d65193276a94cb5b54ead521d9)\n",
+        "epssDetails": {
+          "percentile": "0.15514",
+          "probability": "0.00051",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-0933"
+          ],
+          "CWE": [
+            "CWE-20"
+          ]
+        },
+        "packageName": "wrangler",
+        "proprietary": false,
+        "creationTime": "2026-01-21T11:52:27.188920Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-01-20T23:45:12.535000Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-01-21T11:52:27.412656Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-01-28T01:19:13.380884Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "high",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "wrangler@4.20.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.20.3",
+          "wrangler@4.59.1"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "wrangler",
+        "version": "4.20.0"
+      }
+    ],
+    "ok": false,
+    "dependencyCount": 240,
+    "org": "nap0o",
+    "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.25.1\nignore: {}\npatch: {}\n",
+    "isPrivate": true,
+    "licensesPolicy": {
+      "severities": {},
+      "orgLicenseRules": {
+        "AGPL-1.0": {
+          "licenseType": "AGPL-1.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "AGPL-3.0": {
+          "licenseType": "AGPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "Artistic-1.0": {
+          "licenseType": "Artistic-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "Artistic-2.0": {
+          "licenseType": "Artistic-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CDDL-1.0": {
+          "licenseType": "CDDL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CPOL-1.02": {
+          "licenseType": "CPOL-1.02",
+          "severity": "high",
+          "instructions": ""
+        },
+        "EPL-1.0": {
+          "licenseType": "EPL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "GPL-2.0": {
+          "licenseType": "GPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "GPL-3.0": {
+          "licenseType": "GPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "LGPL-2.0": {
+          "licenseType": "LGPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1": {
+          "licenseType": "LGPL-2.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0": {
+          "licenseType": "LGPL-3.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-1.1": {
+          "licenseType": "MPL-1.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-2.0": {
+          "licenseType": "MPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MS-RL": {
+          "licenseType": "MS-RL",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "SimPL-2.0": {
+          "licenseType": "SimPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        }
+      }
+    },
+    "packageManager": "npm",
+    "ignoreSettings": {
+      "adminOnly": false,
+      "reasonRequired": false,
+      "disregardFilesystemIgnores": false
+    },
+    "summary": "2 vulnerable dependency paths",
+    "remediation": {
+      "unresolved": [],
+      "upgrade": {
+        "@cloudflare/vite-plugin@1.6.0": {
+          "upgradeTo": "@cloudflare/vite-plugin@1.20.3",
+          "upgrades": [
+            "wrangler@4.20.0",
+            "undici@5.29.0"
+          ],
+          "vulns": [
+            "SNYK-JS-WRANGLER-15046269",
+            "SNYK-JS-UNDICI-14943963"
+          ]
+        }
+      },
+      "patch": {},
+      "ignore": {},
+      "pin": {}
+    },
+    "filesystemPolicy": false,
+    "filtered": {
+      "ignore": [],
+      "patch": []
+    },
+    "uniqueCount": 2,
+    "projectName": "mail-worker",
+    "foundProjectCount": 1,
+    "displayTargetFile": "mail-worker/package-lock.json",
+    "hasUnknownVersions": false,
+    "path": "/home/runner/work/cloud-mail/cloud-mail"
+  }
+]
