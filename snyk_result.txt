@@ -1,0 +1,80 @@
+
+Testing /home/runner/work/cloud-mail/cloud-mail...
+
+Tested 112 dependencies for known issues, found 4 issues, 6 vulnerable paths.
+
+
+Issues with no direct upgrade or patch:
+  ✗ Prototype Pollution [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-LODASH-15869619] in lodash@4.18.1
+    introduced by element-plus@2.13.6 > lodash@4.18.1
+  No upgrade or patch available
+  ✗ Arbitrary Code Injection [High Severity][https://security.snyk.io/vuln/SNYK-JS-LODASH-15869625] in lodash@4.18.1
+    introduced by element-plus@2.13.6 > lodash@4.18.1
+  No upgrade or patch available
+  ✗ Prototype Pollution [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-LODASHES-15869621] in lodash-es@4.18.1
+    introduced by lodash-es@4.18.1 and 1 other path(s)
+  No upgrade or patch available
+  ✗ Arbitrary Code Injection [High Severity][https://security.snyk.io/vuln/SNYK-JS-LODASHES-15869627] in lodash-es@4.18.1
+    introduced by lodash-es@4.18.1 and 1 other path(s)
+  No upgrade or patch available
+
+
+
+Organization:      nap0o
+Package manager:   npm
+Target file:       mail-vue/package-lock.json
+Project name:      mail-vue
+Open source:       no
+Project path:      /home/runner/work/cloud-mail/cloud-mail
+Licenses:          enabled
+
+-------------------------------------------------------
+
+Testing /home/runner/work/cloud-mail/cloud-mail...
+
+Tested 240 dependencies for known issues, found 6 issues, 6 vulnerable paths.
+
+
+Issues to fix by upgrading:
+
+  Upgrade @cloudflare/vite-plugin@1.6.0 to @cloudflare/vite-plugin@1.20.3 to fix
+  ✗ Allocation of Resources Without Limits or Throttling [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-UNDICI-14943963] in undici@5.29.0
+    introduced by @cloudflare/vite-plugin@1.6.0 > miniflare@4.20250604.1 > undici@5.29.0
+  ✗ HTTP Request Smuggling (new) [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-UNDICI-15518061] in undici@5.29.0
+    introduced by @cloudflare/vite-plugin@1.6.0 > miniflare@4.20250604.1 > undici@5.29.0
+  ✗ CRLF Injection (new) [Medium Severity][https://security.snyk.io/vuln/SNYK-JS-UNDICI-15518072] in undici@5.29.0
+    introduced by @cloudflare/vite-plugin@1.6.0 > miniflare@4.20250604.1 > undici@5.29.0
+  ✗ Improper Input Validation [High Severity][https://security.snyk.io/vuln/SNYK-JS-WRANGLER-15046269] in wrangler@4.20.0
+    introduced by @cloudflare/vite-plugin@1.6.0 > wrangler@4.20.0
+  ✗ Improper Handling of Highly Compressed Data (Data Amplification) (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-UNDICI-15518068] in undici@5.29.0
+    introduced by @cloudflare/vite-plugin@1.6.0 > miniflare@4.20250604.1 > undici@5.29.0
+  ✗ Uncaught Exception (new) [High Severity][https://security.snyk.io/vuln/SNYK-JS-UNDICI-15518070] in undici@5.29.0
+    introduced by @cloudflare/vite-plugin@1.6.0 > miniflare@4.20250604.1 > undici@5.29.0
+
+
+
+Organization:      nap0o
+Package manager:   npm
+Target file:       mail-worker/package-lock.json
+Project name:      mail-worker
+Open source:       no
+Project path:      /home/runner/work/cloud-mail/cloud-mail
+Licenses:          enabled
+
+
+Tested 2 projects, 2 contained vulnerable paths.
+
+
+
+
+ ERROR   Forbidden (SNYK-CLI-0000)
+         The encountered error only provides basic information, please take a look at   
+         the given details. If they do not help to resolve the issue, consider          
+         debugging or consulting support.                                               
+                                                                                        
+           Forbidden                                                                    
+
+Status:  403 Forbidden 
+Docs:    https://docs.snyk.io/scan-with-snyk/error-catalog#snyk-cli-0000 
+                                                                         
+ID:      urn:snyk:interaction:4a97d304-a87a-424b-8337-6b47a4b73b07 

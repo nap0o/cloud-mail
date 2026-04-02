@@ -1,0 +1,2310 @@
+[
+  {
+    "vulnerabilities": [
+      {
+        "id": "SNYK-JS-LODASH-15869619",
+        "title": "Prototype Pollution",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+        "credit": [
+          "shpik-kr",
+          "maru1009",
+          "ott3r07",
+          "zolbooo",
+          "backuardo"
+        ],
+        "semver": {
+          "vulnerable": [
+            ">=4.0.0"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.9,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "lodash",
+        "references": [
+          {
+            "url": "https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh",
+            "title": "GitHub Advisory"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/issues/6167",
+            "title": "GitHub Issue"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.9,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-04-01T15:09:12.573043Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-04-01T15:09:12.573043Z"
+          }
+        ],
+        "description": "## Overview\n[lodash](https://www.npmjs.com/package/lodash) is a modern JavaScript utility library delivering modularity, performance, & extras.\n\nAffected versions of this package are vulnerable to Prototype Pollution via the `_.unset` and `_.omit` functions. An attacker can delete properties from built-in prototypes by supplying array-wrapped path segments, potentially impacting application behaviour.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to incomplete fix for [CVE-2025-13465](https://security.snyk.io/vuln/SNYK-JS-LODASH-15053838) which protects only against string key members.\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of “path”, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype— use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Olivier. “JavaScript prototype pollution attack in NodeJS application.” GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `lodash`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-2950"
+          ],
+          "CWE": [
+            "CWE-1321"
+          ],
+          "GHSA": [
+            "GHSA-f23m-r3pf-42rh"
+          ]
+        },
+        "packageName": "lodash",
+        "proprietary": false,
+        "creationTime": "2026-04-01T10:06:10.556451Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-31T23:02:29Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-04-01T10:06:10.804459Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-04-01T15:09:12.573043Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "medium",
+        "from": [
+          "mail-vue@0.0.0",
+          "element-plus@2.13.6",
+          "lodash@4.18.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "lodash",
+        "version": "4.18.1"
+      },
+      {
+        "id": "SNYK-JS-LODASH-15869625",
+        "title": "Arbitrary Code Injection",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+        "credit": [
+          "Yuki Shiroi",
+          "Mundur",
+          "dolevmiz1"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 8.6,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "lodash",
+        "references": [
+          {
+            "url": "https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc",
+            "title": "GitHub Advisory"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/issues/6167",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://cna.openjsf.org/security-advisories.html",
+            "title": "OpenJS Security Advisory"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.6,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-04-01T15:07:41.617446Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.2,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-04-01T15:07:41.617446Z"
+          }
+        ],
+        "description": "## Overview\n[lodash](https://www.npmjs.com/package/lodash) is a modern JavaScript utility library delivering modularity, performance, & extras.\n\nAffected versions of this package are vulnerable to Arbitrary Code Injection due the improper validation of `options.imports` key names in `_.template`. An attacker can execute arbitrary code at template compilation time by injecting malicious expressions. If `Object.prototype` has been polluted, inherited properties may also be copied into the imports object and executed.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to the incomplete fix for [CVE-2021-23337](https://security.snyk.io/vuln/SNYK-JS-LODASH-1040724).\n## Remediation\nThere is no fixed version for `lodash`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n- [OpenJS Security Advisory](https://cna.openjsf.org/security-advisories.html)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-4800"
+          ],
+          "CWE": [
+            "CWE-94"
+          ],
+          "GHSA": [
+            "GHSA-r5fr-rjxr-66jc"
+          ]
+        },
+        "packageName": "lodash",
+        "proprietary": false,
+        "creationTime": "2026-04-01T10:31:59.814940Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-31T23:02:03Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-04-01T10:32:00.027414Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-04-01T15:07:41.617446Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "high",
+        "from": [
+          "mail-vue@0.0.0",
+          "element-plus@2.13.6",
+          "lodash@4.18.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "lodash",
+        "version": "4.18.1"
+      },
+      {
+        "id": "SNYK-JS-LODASHES-15869621",
+        "title": "Prototype Pollution",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+        "credit": [
+          "shpik-kr",
+          "maru1009",
+          "ott3r07",
+          "zolbooo",
+          "backuardo"
+        ],
+        "semver": {
+          "vulnerable": [
+            ">=4.0.0"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.9,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "lodash-es",
+        "references": [
+          {
+            "url": "https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh",
+            "title": "GitHub Advisory"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/issues/6167",
+            "title": "GitHub Issue"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.9,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-04-01T15:09:12.573043Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-04-01T15:09:12.573043Z"
+          }
+        ],
+        "description": "## Overview\n\nAffected versions of this package are vulnerable to Prototype Pollution via the `_.unset` and `_.omit` functions. An attacker can delete properties from built-in prototypes by supplying array-wrapped path segments, potentially impacting application behaviour.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to incomplete fix for [CVE-2025-13465](https://security.snyk.io/vuln/SNYK-JS-LODASH-15053838) which protects only against string key members.\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of “path”, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype— use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Olivier. “JavaScript prototype pollution attack in NodeJS application.” GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `lodash-es`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-2950"
+          ],
+          "CWE": [
+            "CWE-1321"
+          ],
+          "GHSA": [
+            "GHSA-f23m-r3pf-42rh"
+          ]
+        },
+        "packageName": "lodash-es",
+        "proprietary": false,
+        "creationTime": "2026-04-01T10:06:11.076219Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-31T23:02:29Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-04-01T10:06:11.266091Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-04-01T15:09:12.573043Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "medium",
+        "from": [
+          "mail-vue@0.0.0",
+          "lodash-es@4.18.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "lodash-es",
+        "version": "4.18.1"
+      },
+      {
+        "id": "SNYK-JS-LODASHES-15869627",
+        "title": "Arbitrary Code Injection",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+        "credit": [
+          "Yuki Shiroi",
+          "Mundur",
+          "dolevmiz1"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 8.6,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "lodash-es",
+        "references": [
+          {
+            "url": "https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc",
+            "title": "GitHub Advisory"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/issues/6167",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://cna.openjsf.org/security-advisories.html",
+            "title": "OpenJS Security Advisory"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.6,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-04-01T15:07:41.617446Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.2,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-04-01T15:07:41.617446Z"
+          }
+        ],
+        "description": "## Overview\n\nAffected versions of this package are vulnerable to Arbitrary Code Injection due the improper validation of `options.imports` key names in `_.template`. An attacker can execute arbitrary code at template compilation time by injecting malicious expressions. If `Object.prototype` has been polluted, inherited properties may also be copied into the imports object and executed.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to the incomplete fix for [CVE-2021-23337](https://security.snyk.io/vuln/SNYK-JS-LODASH-1040724).\n## Remediation\nThere is no fixed version for `lodash-es`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n- [OpenJS Security Advisory](https://cna.openjsf.org/security-advisories.html)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-4800"
+          ],
+          "CWE": [
+            "CWE-94"
+          ],
+          "GHSA": [
+            "GHSA-r5fr-rjxr-66jc"
+          ]
+        },
+        "packageName": "lodash-es",
+        "proprietary": false,
+        "creationTime": "2026-04-01T10:32:00.493888Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-31T23:02:03Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-04-01T10:32:00.715047Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-04-01T15:07:41.617446Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "high",
+        "from": [
+          "mail-vue@0.0.0",
+          "lodash-es@4.18.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "lodash-es",
+        "version": "4.18.1"
+      },
+      {
+        "id": "SNYK-JS-LODASHES-15869621",
+        "title": "Prototype Pollution",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+        "credit": [
+          "shpik-kr",
+          "maru1009",
+          "ott3r07",
+          "zolbooo",
+          "backuardo"
+        ],
+        "semver": {
+          "vulnerable": [
+            ">=4.0.0"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.9,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "lodash-es",
+        "references": [
+          {
+            "url": "https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh",
+            "title": "GitHub Advisory"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/issues/6167",
+            "title": "GitHub Issue"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.9,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-04-01T15:09:12.573043Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-04-01T15:09:12.573043Z"
+          }
+        ],
+        "description": "## Overview\n\nAffected versions of this package are vulnerable to Prototype Pollution via the `_.unset` and `_.omit` functions. An attacker can delete properties from built-in prototypes by supplying array-wrapped path segments, potentially impacting application behaviour.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to incomplete fix for [CVE-2025-13465](https://security.snyk.io/vuln/SNYK-JS-LODASH-15053838) which protects only against string key members.\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of “path”, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype— use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Olivier. “JavaScript prototype pollution attack in NodeJS application.” GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `lodash-es`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-2950"
+          ],
+          "CWE": [
+            "CWE-1321"
+          ],
+          "GHSA": [
+            "GHSA-f23m-r3pf-42rh"
+          ]
+        },
+        "packageName": "lodash-es",
+        "proprietary": false,
+        "creationTime": "2026-04-01T10:06:11.076219Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-31T23:02:29Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-04-01T10:06:11.266091Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-04-01T15:09:12.573043Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "medium",
+        "from": [
+          "mail-vue@0.0.0",
+          "element-plus@2.13.6",
+          "lodash-es@4.18.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "lodash-es",
+        "version": "4.18.1"
+      },
+      {
+        "id": "SNYK-JS-LODASHES-15869627",
+        "title": "Arbitrary Code Injection",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+        "credit": [
+          "Yuki Shiroi",
+          "Mundur",
+          "dolevmiz1"
+        ],
+        "semver": {
+          "vulnerable": [
+            "*"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 8.6,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "lodash-es",
+        "references": [
+          {
+            "url": "https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc",
+            "title": "GitHub Advisory"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/lodash/lodash/issues/6167",
+            "title": "GitHub Issue"
+          },
+          {
+            "url": "https://cna.openjsf.org/security-advisories.html",
+            "title": "OpenJS Security Advisory"
+          }
+        ],
+        "cvssDetails": [],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.6,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-04-01T15:07:41.617446Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.2,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-04-01T15:07:41.617446Z"
+          }
+        ],
+        "description": "## Overview\n\nAffected versions of this package are vulnerable to Arbitrary Code Injection due the improper validation of `options.imports` key names in `_.template`. An attacker can execute arbitrary code at template compilation time by injecting malicious expressions. If `Object.prototype` has been polluted, inherited properties may also be copied into the imports object and executed.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to the incomplete fix for [CVE-2021-23337](https://security.snyk.io/vuln/SNYK-JS-LODASH-1040724).\n## Remediation\nThere is no fixed version for `lodash-es`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n- [OpenJS Security Advisory](https://cna.openjsf.org/security-advisories.html)\n",
+        "epssDetails": null,
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-4800"
+          ],
+          "CWE": [
+            "CWE-94"
+          ],
+          "GHSA": [
+            "GHSA-r5fr-rjxr-66jc"
+          ]
+        },
+        "packageName": "lodash-es",
+        "proprietary": false,
+        "creationTime": "2026-04-01T10:32:00.493888Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-31T23:02:03Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-04-01T10:32:00.715047Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-04-01T15:07:41.617446Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "high",
+        "from": [
+          "mail-vue@0.0.0",
+          "element-plus@2.13.6",
+          "lodash-es@4.18.1"
+        ],
+        "upgradePath": [],
+        "isUpgradable": false,
+        "isPatchable": false,
+        "name": "lodash-es",
+        "version": "4.18.1"
+      }
+    ],
+    "ok": false,
+    "dependencyCount": 112,
+    "org": "nap0o",
+    "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.25.1\nignore: {}\npatch: {}\n",
+    "isPrivate": true,
+    "licensesPolicy": {
+      "severities": {},
+      "orgLicenseRules": {
+        "AGPL-1.0": {
+          "licenseType": "AGPL-1.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "AGPL-3.0": {
+          "licenseType": "AGPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "Artistic-1.0": {
+          "licenseType": "Artistic-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "Artistic-2.0": {
+          "licenseType": "Artistic-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CDDL-1.0": {
+          "licenseType": "CDDL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CPOL-1.02": {
+          "licenseType": "CPOL-1.02",
+          "severity": "high",
+          "instructions": ""
+        },
+        "EPL-1.0": {
+          "licenseType": "EPL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "GPL-2.0": {
+          "licenseType": "GPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "GPL-3.0": {
+          "licenseType": "GPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "LGPL-2.0": {
+          "licenseType": "LGPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1": {
+          "licenseType": "LGPL-2.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0": {
+          "licenseType": "LGPL-3.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-1.1": {
+          "licenseType": "MPL-1.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-2.0": {
+          "licenseType": "MPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MS-RL": {
+          "licenseType": "MS-RL",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "SimPL-2.0": {
+          "licenseType": "SimPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        }
+      }
+    },
+    "packageManager": "npm",
+    "ignoreSettings": {
+      "adminOnly": false,
+      "reasonRequired": false,
+      "disregardFilesystemIgnores": false
+    },
+    "summary": "6 vulnerable dependency paths",
+    "remediation": {
+      "unresolved": [
+        {
+          "id": "SNYK-JS-LODASH-15869619",
+          "title": "Prototype Pollution",
+          "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+          "credit": [
+            "shpik-kr",
+            "maru1009",
+            "ott3r07",
+            "zolbooo",
+            "backuardo"
+          ],
+          "semver": {
+            "vulnerable": [
+              ">=4.0.0"
+            ]
+          },
+          "exploit": "Not Defined",
+          "fixedIn": [],
+          "patches": [],
+          "insights": {
+            "triageAdvice": null
+          },
+          "language": "js",
+          "severity": "medium",
+          "cvssScore": 6.9,
+          "functions": [],
+          "malicious": false,
+          "isDisputed": false,
+          "moduleName": "lodash",
+          "references": [
+            {
+              "url": "https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh",
+              "title": "GitHub Advisory"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b",
+              "title": "GitHub Commit"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/issues/6167",
+              "title": "GitHub Issue"
+            }
+          ],
+          "cvssDetails": [],
+          "cvssSources": [
+            {
+              "type": "primary",
+              "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:N/SA:N",
+              "assigner": "Snyk",
+              "severity": "medium",
+              "baseScore": 6.9,
+              "cvssVersion": "4.0",
+              "modificationTime": "2026-04-01T15:09:12.573043Z"
+            },
+            {
+              "type": "secondary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+              "assigner": "Snyk",
+              "severity": "medium",
+              "baseScore": 6.5,
+              "cvssVersion": "3.1",
+              "modificationTime": "2026-04-01T15:09:12.573043Z"
+            }
+          ],
+          "description": "## Overview\n[lodash](https://www.npmjs.com/package/lodash) is a modern JavaScript utility library delivering modularity, performance, & extras.\n\nAffected versions of this package are vulnerable to Prototype Pollution via the `_.unset` and `_.omit` functions. An attacker can delete properties from built-in prototypes by supplying array-wrapped path segments, potentially impacting application behaviour.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to incomplete fix for [CVE-2025-13465](https://security.snyk.io/vuln/SNYK-JS-LODASH-15053838) which protects only against string key members.\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of “path”, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype— use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Olivier. “JavaScript prototype pollution attack in NodeJS application.” GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `lodash`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n",
+          "epssDetails": null,
+          "identifiers": {
+            "CVE": [
+              "CVE-2026-2950"
+            ],
+            "CWE": [
+              "CWE-1321"
+            ],
+            "GHSA": [
+              "GHSA-f23m-r3pf-42rh"
+            ]
+          },
+          "packageName": "lodash",
+          "proprietary": false,
+          "creationTime": "2026-04-01T10:06:10.556451Z",
+          "functions_new": [],
+          "alternativeIds": [],
+          "disclosureTime": "2026-03-31T23:02:29Z",
+          "exploitDetails": {
+            "sources": [],
+            "maturityLevels": [
+              {
+                "type": "secondary",
+                "level": "Not Defined",
+                "format": "CVSSv3"
+              },
+              {
+                "type": "primary",
+                "level": "Not Defined",
+                "format": "CVSSv4"
+              }
+            ]
+          },
+          "packageManager": "npm",
+          "publicationTime": "2026-04-01T10:06:10.804459Z",
+          "severityBasedOn": "CVSS",
+          "modificationTime": "2026-04-01T15:09:12.573043Z",
+          "socialTrendAlert": false,
+          "packagePopularityRank": 99,
+          "from": [
+            "mail-vue@0.0.0",
+            "element-plus@2.13.6",
+            "lodash@4.18.1"
+          ],
+          "upgradePath": [],
+          "isUpgradable": false,
+          "isPatchable": false,
+          "isPinnable": false,
+          "isRuntime": false,
+          "name": "lodash",
+          "version": "4.18.1",
+          "severityWithCritical": "medium"
+        },
+        {
+          "id": "SNYK-JS-LODASH-15869625",
+          "title": "Arbitrary Code Injection",
+          "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+          "credit": [
+            "Yuki Shiroi",
+            "Mundur",
+            "dolevmiz1"
+          ],
+          "semver": {
+            "vulnerable": [
+              "*"
+            ]
+          },
+          "exploit": "Not Defined",
+          "fixedIn": [],
+          "patches": [],
+          "insights": {
+            "triageAdvice": null
+          },
+          "language": "js",
+          "severity": "high",
+          "cvssScore": 8.6,
+          "functions": [],
+          "malicious": false,
+          "isDisputed": false,
+          "moduleName": "lodash",
+          "references": [
+            {
+              "url": "https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc",
+              "title": "GitHub Advisory"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6",
+              "title": "GitHub Commit"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/issues/6167",
+              "title": "GitHub Issue"
+            },
+            {
+              "url": "https://cna.openjsf.org/security-advisories.html",
+              "title": "OpenJS Security Advisory"
+            }
+          ],
+          "cvssDetails": [],
+          "cvssSources": [
+            {
+              "type": "primary",
+              "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+              "assigner": "Snyk",
+              "severity": "high",
+              "baseScore": 8.6,
+              "cvssVersion": "4.0",
+              "modificationTime": "2026-04-01T15:07:41.617446Z"
+            },
+            {
+              "type": "secondary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "assigner": "Snyk",
+              "severity": "high",
+              "baseScore": 7.2,
+              "cvssVersion": "3.1",
+              "modificationTime": "2026-04-01T15:07:41.617446Z"
+            }
+          ],
+          "description": "## Overview\n[lodash](https://www.npmjs.com/package/lodash) is a modern JavaScript utility library delivering modularity, performance, & extras.\n\nAffected versions of this package are vulnerable to Arbitrary Code Injection due the improper validation of `options.imports` key names in `_.template`. An attacker can execute arbitrary code at template compilation time by injecting malicious expressions. If `Object.prototype` has been polluted, inherited properties may also be copied into the imports object and executed.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to the incomplete fix for [CVE-2021-23337](https://security.snyk.io/vuln/SNYK-JS-LODASH-1040724).\n## Remediation\nThere is no fixed version for `lodash`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n- [OpenJS Security Advisory](https://cna.openjsf.org/security-advisories.html)\n",
+          "epssDetails": null,
+          "identifiers": {
+            "CVE": [
+              "CVE-2026-4800"
+            ],
+            "CWE": [
+              "CWE-94"
+            ],
+            "GHSA": [
+              "GHSA-r5fr-rjxr-66jc"
+            ]
+          },
+          "packageName": "lodash",
+          "proprietary": false,
+          "creationTime": "2026-04-01T10:31:59.814940Z",
+          "functions_new": [],
+          "alternativeIds": [],
+          "disclosureTime": "2026-03-31T23:02:03Z",
+          "exploitDetails": {
+            "sources": [],
+            "maturityLevels": [
+              {
+                "type": "secondary",
+                "level": "Not Defined",
+                "format": "CVSSv3"
+              },
+              {
+                "type": "primary",
+                "level": "Not Defined",
+                "format": "CVSSv4"
+              }
+            ]
+          },
+          "packageManager": "npm",
+          "publicationTime": "2026-04-01T10:32:00.027414Z",
+          "severityBasedOn": "CVSS",
+          "modificationTime": "2026-04-01T15:07:41.617446Z",
+          "socialTrendAlert": false,
+          "packagePopularityRank": 99,
+          "from": [
+            "mail-vue@0.0.0",
+            "element-plus@2.13.6",
+            "lodash@4.18.1"
+          ],
+          "upgradePath": [],
+          "isUpgradable": false,
+          "isPatchable": false,
+          "isPinnable": false,
+          "isRuntime": false,
+          "name": "lodash",
+          "version": "4.18.1",
+          "severityWithCritical": "high"
+        },
+        {
+          "id": "SNYK-JS-LODASHES-15869621",
+          "title": "Prototype Pollution",
+          "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+          "credit": [
+            "shpik-kr",
+            "maru1009",
+            "ott3r07",
+            "zolbooo",
+            "backuardo"
+          ],
+          "semver": {
+            "vulnerable": [
+              ">=4.0.0"
+            ]
+          },
+          "exploit": "Not Defined",
+          "fixedIn": [],
+          "patches": [],
+          "insights": {
+            "triageAdvice": null
+          },
+          "language": "js",
+          "severity": "medium",
+          "cvssScore": 6.9,
+          "functions": [],
+          "malicious": false,
+          "isDisputed": false,
+          "moduleName": "lodash-es",
+          "references": [
+            {
+              "url": "https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh",
+              "title": "GitHub Advisory"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b",
+              "title": "GitHub Commit"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/issues/6167",
+              "title": "GitHub Issue"
+            }
+          ],
+          "cvssDetails": [],
+          "cvssSources": [
+            {
+              "type": "primary",
+              "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:N/SA:N",
+              "assigner": "Snyk",
+              "severity": "medium",
+              "baseScore": 6.9,
+              "cvssVersion": "4.0",
+              "modificationTime": "2026-04-01T15:09:12.573043Z"
+            },
+            {
+              "type": "secondary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L",
+              "assigner": "Snyk",
+              "severity": "medium",
+              "baseScore": 6.5,
+              "cvssVersion": "3.1",
+              "modificationTime": "2026-04-01T15:09:12.573043Z"
+            }
+          ],
+          "description": "## Overview\n\nAffected versions of this package are vulnerable to Prototype Pollution via the `_.unset` and `_.omit` functions. An attacker can delete properties from built-in prototypes by supplying array-wrapped path segments, potentially impacting application behaviour.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to incomplete fix for [CVE-2025-13465](https://security.snyk.io/vuln/SNYK-JS-LODASH-15053838) which protects only against string key members.\n\n## Details\n\nPrototype Pollution is a vulnerability affecting JavaScript. Prototype Pollution refers to the ability to inject properties into existing JavaScript language construct prototypes, such as objects. JavaScript allows all Object attributes to be altered, including their magical attributes such as `__proto__`, `constructor` and `prototype`. An attacker manipulates these attributes to overwrite, or pollute, a JavaScript application object prototype of the base object by injecting other values.  Properties on the `Object.prototype` are then inherited by all the JavaScript objects through the prototype chain. When that happens, this leads to either denial of service by triggering JavaScript exceptions, or it tampers with the application source code to force the code path that the attacker injects, thereby leading to remote code execution.\n\nThere are two main ways in which the pollution of prototypes occurs:\n\n-   Unsafe `Object` recursive merge\n    \n-   Property definition by path\n    \n\n### Unsafe Object recursive merge\n\nThe logic of a vulnerable recursive merge function follows the following high-level model:\n```\nmerge (target, source)\n\n  foreach property of source\n\n    if property exists and is an object on both the target and the source\n\n      merge(target[property], source[property])\n\n    else\n\n      target[property] = source[property]\n```\n<br>  \n\nWhen the source object contains a property named `__proto__` defined with `Object.defineProperty()` , the condition that checks if the property exists and is an object on both the target and the source passes and the merge recurses with the target, being the prototype of `Object` and the source of `Object` as defined by the attacker. Properties are then copied on the `Object` prototype.\n\nClone operations are a special sub-class of unsafe recursive merges, which occur when a recursive merge is conducted on an empty object: `merge({},source)`.\n\n`lodash` and `Hoek` are examples of libraries susceptible to recursive merge attacks.\n\n### Property definition by path\n\nThere are a few JavaScript libraries that use an API to define property values on an object based on a given path. The function that is generally affected contains this signature: `theFunction(object, path, value)`\n\nIf the attacker can control the value of “path”, they can set this value to `__proto__.myValue`. `myValue` is then assigned to the prototype of the class of the object.\n\n## Types of attacks\n\nThere are a few methods by which Prototype Pollution can be manipulated:\n\n| Type |Origin  |Short description |\n|--|--|--|\n| **Denial of service (DoS)**|Client  |This is the most likely attack. <br>DoS occurs when `Object` holds generic functions that are implicitly called for various operations (for example, `toString` and `valueOf`). <br> The attacker pollutes `Object.prototype.someattr` and alters its state to an unexpected value such as `Int` or `Object`. In this case, the code fails and is likely to cause a denial of service.  <br>**For example:** if an attacker pollutes `Object.prototype.toString` by defining it as an integer, if the codebase at any point was reliant on `someobject.toString()` it would fail. |\n |**Remote Code Execution**|Client|Remote code execution is generally only possible in cases where the codebase evaluates a specific attribute of an object, and then executes that evaluation.<br>**For example:** `eval(someobject.someattr)`. In this case, if the attacker pollutes `Object.prototype.someattr` they are likely to be able to leverage this in order to execute code.|\n|**Property Injection**|Client|The attacker pollutes properties that the codebase relies on for their informative value, including security properties such as cookies or tokens.<br>  **For example:** if a codebase checks privileges for `someuser.isAdmin`, then when the attacker pollutes `Object.prototype.isAdmin` and sets it to equal `true`, they can then achieve admin privileges.|\n\n## Affected environments\n\nThe following environments are susceptible to a Prototype Pollution attack:\n\n-   Application server\n    \n-   Web server\n\n-   Web browser\n    \n\n## How to prevent\n\n1.  Freeze the prototype— use `Object.freeze (Object.prototype)`.\n    \n2.  Require schema validation of JSON input.\n    \n3.  Avoid using unsafe recursive merge functions.\n    \n4.  Consider using objects without prototypes (for example, `Object.create(null)`), breaking the prototype chain and preventing pollution.\n    \n5.  As a best practice use `Map` instead of `Object`.\n\n### For more information on this vulnerability type:\n\n[Arteau, Olivier. “JavaScript prototype pollution attack in NodeJS application.” GitHub, 26 May 2018](https://github.com/HoLyVieR/prototype-pollution-nsec18/blob/master/paper/JavaScript_prototype_pollution_attack_in_NodeJS.pdf)\n\n## Remediation\nThere is no fixed version for `lodash-es`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-f23m-r3pf-42rh)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/fe8d32eda854377349a4f922ab7655c8e5df9a0b)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n",
+          "epssDetails": null,
+          "identifiers": {
+            "CVE": [
+              "CVE-2026-2950"
+            ],
+            "CWE": [
+              "CWE-1321"
+            ],
+            "GHSA": [
+              "GHSA-f23m-r3pf-42rh"
+            ]
+          },
+          "packageName": "lodash-es",
+          "proprietary": false,
+          "creationTime": "2026-04-01T10:06:11.076219Z",
+          "functions_new": [],
+          "alternativeIds": [],
+          "disclosureTime": "2026-03-31T23:02:29Z",
+          "exploitDetails": {
+            "sources": [],
+            "maturityLevels": [
+              {
+                "type": "secondary",
+                "level": "Not Defined",
+                "format": "CVSSv3"
+              },
+              {
+                "type": "primary",
+                "level": "Not Defined",
+                "format": "CVSSv4"
+              }
+            ]
+          },
+          "packageManager": "npm",
+          "publicationTime": "2026-04-01T10:06:11.266091Z",
+          "severityBasedOn": "CVSS",
+          "modificationTime": "2026-04-01T15:09:12.573043Z",
+          "socialTrendAlert": false,
+          "packagePopularityRank": 99,
+          "from": [
+            "mail-vue@0.0.0",
+            "element-plus@2.13.6",
+            "lodash-es@4.18.1"
+          ],
+          "upgradePath": [],
+          "isUpgradable": false,
+          "isPatchable": false,
+          "isPinnable": false,
+          "isRuntime": false,
+          "name": "lodash-es",
+          "version": "4.18.1",
+          "severityWithCritical": "medium"
+        },
+        {
+          "id": "SNYK-JS-LODASHES-15869627",
+          "title": "Arbitrary Code Injection",
+          "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+          "credit": [
+            "Yuki Shiroi",
+            "Mundur",
+            "dolevmiz1"
+          ],
+          "semver": {
+            "vulnerable": [
+              "*"
+            ]
+          },
+          "exploit": "Not Defined",
+          "fixedIn": [],
+          "patches": [],
+          "insights": {
+            "triageAdvice": null
+          },
+          "language": "js",
+          "severity": "high",
+          "cvssScore": 8.6,
+          "functions": [],
+          "malicious": false,
+          "isDisputed": false,
+          "moduleName": "lodash-es",
+          "references": [
+            {
+              "url": "https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc",
+              "title": "GitHub Advisory"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6",
+              "title": "GitHub Commit"
+            },
+            {
+              "url": "https://github.com/lodash/lodash/issues/6167",
+              "title": "GitHub Issue"
+            },
+            {
+              "url": "https://cna.openjsf.org/security-advisories.html",
+              "title": "OpenJS Security Advisory"
+            }
+          ],
+          "cvssDetails": [],
+          "cvssSources": [
+            {
+              "type": "primary",
+              "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:H/UI:N/VC:H/VI:H/VA:H/SC:N/SI:N/SA:N",
+              "assigner": "Snyk",
+              "severity": "high",
+              "baseScore": 8.6,
+              "cvssVersion": "4.0",
+              "modificationTime": "2026-04-01T15:07:41.617446Z"
+            },
+            {
+              "type": "secondary",
+              "vector": "CVSS:3.1/AV:N/AC:L/PR:H/UI:N/S:U/C:H/I:H/A:H",
+              "assigner": "Snyk",
+              "severity": "high",
+              "baseScore": 7.2,
+              "cvssVersion": "3.1",
+              "modificationTime": "2026-04-01T15:07:41.617446Z"
+            }
+          ],
+          "description": "## Overview\n\nAffected versions of this package are vulnerable to Arbitrary Code Injection due the improper validation of `options.imports` key names in `_.template`. An attacker can execute arbitrary code at template compilation time by injecting malicious expressions. If `Object.prototype` has been polluted, inherited properties may also be copied into the imports object and executed.\r\n\r\n**Notes:**\r\n\r\n1) Version 4.18.0 was intended to fix this vulnerability but it got deprecated due to introducing a breaking [functionality issue](https://github.com/lodash/lodash/issues/6167).\r\n\r\n2) This issue is due to the incomplete fix for [CVE-2021-23337](https://security.snyk.io/vuln/SNYK-JS-LODASH-1040724).\n## Remediation\nThere is no fixed version for `lodash-es`.\n## References\n- [GitHub Advisory](https://github.com/lodash/lodash/security/advisories/GHSA-r5fr-rjxr-66jc)\n- [GitHub Commit](https://github.com/lodash/lodash/commit/879aaa93132d78c2f8d20c60279da9f8b21576d6)\n- [GitHub Issue](https://github.com/lodash/lodash/issues/6167)\n- [OpenJS Security Advisory](https://cna.openjsf.org/security-advisories.html)\n",
+          "epssDetails": null,
+          "identifiers": {
+            "CVE": [
+              "CVE-2026-4800"
+            ],
+            "CWE": [
+              "CWE-94"
+            ],
+            "GHSA": [
+              "GHSA-r5fr-rjxr-66jc"
+            ]
+          },
+          "packageName": "lodash-es",
+          "proprietary": false,
+          "creationTime": "2026-04-01T10:32:00.493888Z",
+          "functions_new": [],
+          "alternativeIds": [],
+          "disclosureTime": "2026-03-31T23:02:03Z",
+          "exploitDetails": {
+            "sources": [],
+            "maturityLevels": [
+              {
+                "type": "secondary",
+                "level": "Not Defined",
+                "format": "CVSSv3"
+              },
+              {
+                "type": "primary",
+                "level": "Not Defined",
+                "format": "CVSSv4"
+              }
+            ]
+          },
+          "packageManager": "npm",
+          "publicationTime": "2026-04-01T10:32:00.715047Z",
+          "severityBasedOn": "CVSS",
+          "modificationTime": "2026-04-01T15:07:41.617446Z",
+          "socialTrendAlert": false,
+          "packagePopularityRank": 99,
+          "from": [
+            "mail-vue@0.0.0",
+            "element-plus@2.13.6",
+            "lodash-es@4.18.1"
+          ],
+          "upgradePath": [],
+          "isUpgradable": false,
+          "isPatchable": false,
+          "isPinnable": false,
+          "isRuntime": false,
+          "name": "lodash-es",
+          "version": "4.18.1",
+          "severityWithCritical": "high"
+        }
+      ],
+      "upgrade": {},
+      "patch": {},
+      "ignore": {},
+      "pin": {}
+    },
+    "filesystemPolicy": false,
+    "filtered": {
+      "ignore": [],
+      "patch": []
+    },
+    "uniqueCount": 4,
+    "projectName": "mail-vue",
+    "foundProjectCount": 1,
+    "displayTargetFile": "mail-vue/package-lock.json",
+    "hasUnknownVersions": false,
+    "path": "/home/runner/work/cloud-mail/cloud-mail"
+  },
+  {
+    "vulnerabilities": [
+      {
+        "id": "SNYK-JS-UNDICI-14943963",
+        "title": "Allocation of Resources Without Limits or Throttling",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:L",
+        "credit": [
+          "Illia Volochii"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<6.23.0",
+            ">=7.0.0-alpha.2 <7.18.2"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "6.23.0",
+          "7.18.2"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 5.3,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "undici",
+        "references": [
+          {
+            "url": "https://github.com/nodejs/undici/commit/b04e3cbb569c1596f86c108e9b52c79d8475dcb3",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/nodejs/undici/commit/d3aafea7a2b3c351970c0c634b7cba8231763ca4",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://github.com/nodejs/undici/releases/tag/v6.23.0",
+            "title": "GitHub Release"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "low",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "cvssV3BaseScore": 3.7,
+            "modificationTime": "2026-01-17T02:33:20.194372Z"
+          },
+          {
+            "assigner": "NVD",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2026-01-21T18:26:05.120798Z"
+          },
+          {
+            "assigner": "SUSE",
+            "severity": "low",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "cvssV3BaseScore": 3.7,
+            "modificationTime": "2026-01-27T11:09:55.251052Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:P/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 5.3,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-01-15T13:11:49.967756Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:L",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 4.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-15T13:11:49.967756Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "assigner": "Red Hat",
+            "severity": "low",
+            "baseScore": 3.7,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-17T02:33:20.194372Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "NVD",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-21T18:26:05.120798Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L",
+            "assigner": "SUSE",
+            "severity": "low",
+            "baseScore": 3.7,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-27T11:09:55.251052Z"
+          }
+        ],
+        "description": "## Overview\n[undici](https://www.npmjs.org/package/undici) is an An HTTP/1.1 client, written from scratch for Node.js\n\nAffected versions of this package are vulnerable to Allocation of Resources Without Limits or Throttling via the decompression chain. An attacker can cause high CPU usage and excessive memory allocation by sending HTTP responses with a large number of chained compression steps in the `Content-Encoding` header.\n## Remediation\nUpgrade `undici` to version 6.23.0, 7.18.2 or higher.\n## References\n- [GitHub Commit](https://github.com/nodejs/undici/commit/b04e3cbb569c1596f86c108e9b52c79d8475dcb3)\n- [GitHub Commit](https://github.com/nodejs/undici/commit/d3aafea7a2b3c351970c0c634b7cba8231763ca4)\n- [GitHub Release](https://github.com/nodejs/undici/releases/tag/v6.23.0)\n",
+        "epssDetails": {
+          "percentile": "0.05306",
+          "probability": "0.00020",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-22036"
+          ],
+          "CWE": [
+            "CWE-770"
+          ],
+          "GHSA": [
+            "GHSA-g9mf-h72j-4rw9"
+          ]
+        },
+        "packageName": "undici",
+        "proprietary": false,
+        "creationTime": "2026-01-15T11:21:51.529342Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-01-14T19:51:10Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-01-15T13:11:11.020450Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-01-27T11:09:55.251052Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "medium",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "miniflare@4.20250604.1",
+          "undici@5.29.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.9.5",
+          "miniflare@4.20250712.0",
+          "undici@7.24.7"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "undici",
+        "version": "5.29.0"
+      },
+      {
+        "id": "SNYK-JS-UNDICI-15518061",
+        "title": "HTTP Request Smuggling",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L/E:P",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<6.24.0",
+            ">=7.0.0-alpha.1 <7.24.0"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "6.24.0",
+          "7.24.0"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 6.9,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "undici",
+        "references": [
+          {
+            "url": "https://github.com/nodejs/undici/commit/4e0179ae643e6f4380f24cc3683c1b1ca2afb094",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://hackerone.com/reports/3556037",
+            "title": "HackerOne Report"
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2447144",
+            "title": "Red Hat Bugzilla Bug"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+            "cvssV3BaseScore": 7.3,
+            "modificationTime": "2026-03-29T08:38:34.889037Z"
+          },
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "cvssV3BaseScore": 9.8,
+            "modificationTime": "2026-03-20T01:23:26.352408Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:L/VA:L/SC:N/SI:N/SA:N/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.9,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-03-13T17:39:20.328635Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:L/A:L/E:P",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-13T17:39:20.328635Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:L/I:L/A:L",
+            "assigner": "Red Hat",
+            "severity": "high",
+            "baseScore": 7.3,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-29T08:38:34.889037Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 9.8,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-20T01:23:26.352408Z"
+          }
+        ],
+        "description": "## Overview\n[undici](https://www.npmjs.org/package/undici) is an An HTTP/1.1 client, written from scratch for Node.js\n\nAffected versions of this package are vulnerable to HTTP Request Smuggling in the `processHeader()` while handling HTTP/1.1 requests containing duplicate `Content-Length` headers with differing casing. An attacker can bypass access controls, poison caches, hijack credentials, or cause service disruption by sending specially crafted HTTP requests that are interpreted inconsistently by proxies and backend servers.\n## Remediation\nUpgrade `undici` to version 6.24.0, 7.24.0 or higher.\n## References\n- [GitHub Commit](https://github.com/nodejs/undici/commit/4e0179ae643e6f4380f24cc3683c1b1ca2afb094)\n- [HackerOne Report](https://hackerone.com/reports/3556037)\n- [Red Hat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=2447144)\n",
+        "epssDetails": {
+          "percentile": "0.03725",
+          "probability": "0.00016",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-1525"
+          ],
+          "CWE": [
+            "CWE-444"
+          ]
+        },
+        "packageName": "undici",
+        "proprietary": false,
+        "creationTime": "2026-03-13T09:12:12.516583Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-12T19:56:55Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-03-13T09:12:12.748032Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-03-29T08:38:34.889037Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "medium",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "miniflare@4.20250604.1",
+          "undici@5.29.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.9.5",
+          "miniflare@4.20250712.0",
+          "undici@7.24.7"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "undici",
+        "version": "5.29.0"
+      },
+      {
+        "id": "SNYK-JS-UNDICI-15518068",
+        "title": "Improper Handling of Highly Compressed Data (Data Amplification)",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<6.24.0",
+            ">=7.0.0-alpha.1 <7.24.0"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "6.24.0",
+          "7.24.0"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 8.7,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "undici",
+        "references": [
+          {
+            "url": "https://github.com/nodejs/undici/commit/4b4f93ae292f0d245d3957bc08ee2e03d0839faa",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://hackerone.com/reports/3481206",
+            "title": "HackerOne Report"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2026-03-14T21:41:54.146835Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.7,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-03-13T17:37:07.843828Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-13T17:37:07.843828Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "Red Hat",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-14T21:41:54.146835Z"
+          }
+        ],
+        "description": "## Overview\n[undici](https://www.npmjs.org/package/undici) is an An HTTP/1.1 client, written from scratch for Node.js\n\nAffected versions of this package are vulnerable to Improper Handling of Highly Compressed Data (Data Amplification) in the `PerMessageDeflate.decompress()` method of the permessage-deflate extension. An attacker can cause excessive memory usage by sending specially crafted compressed WebSocket frames that decompress to a very large size, potentially leading to process crashes or unresponsiveness.\n## Remediation\nUpgrade `undici` to version 6.24.0, 7.24.0 or higher.\n## References\n- [GitHub Commit](https://github.com/nodejs/undici/commit/4b4f93ae292f0d245d3957bc08ee2e03d0839faa)\n- [HackerOne Report](https://hackerone.com/reports/3481206)\n",
+        "epssDetails": {
+          "percentile": "0.04727",
+          "probability": "0.00018",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-1526"
+          ],
+          "CWE": [
+            "CWE-409"
+          ],
+          "GHSA": [
+            "GHSA-vrm6-8vpv-qv8q"
+          ]
+        },
+        "packageName": "undici",
+        "proprietary": false,
+        "creationTime": "2026-03-13T09:25:35.979418Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-12T22:39:09Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-03-13T09:25:36.181466Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-03-14T21:41:54.146835Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "high",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "miniflare@4.20250604.1",
+          "undici@5.29.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.9.5",
+          "miniflare@4.20250712.0",
+          "undici@7.24.7"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "undici",
+        "version": "5.29.0"
+      },
+      {
+        "id": "SNYK-JS-UNDICI-15518070",
+        "title": "Uncaught Exception",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<6.24.0",
+            ">=7.0.0-alpha.1 <7.24.0"
+          ]
+        },
+        "exploit": "Proof of Concept",
+        "fixedIn": [
+          "6.24.0",
+          "7.24.0"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 8.7,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "undici",
+        "references": [
+          {
+            "url": "https://github.com/nodejs/undici/commit/e9e2997ed18bff6ae389712d5f0e169f8a6546a0",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://hackerone.com/reports/3487486",
+            "title": "HackerOne Report"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "high",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "cvssV3BaseScore": 7.5,
+            "modificationTime": "2026-03-14T21:38:38.644743Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:N/UI:N/VC:N/VI:N/VA:H/SC:N/SI:N/SA:N/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.7,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-03-13T17:36:45.904394Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H/E:P",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-13T17:36:45.904394Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H",
+            "assigner": "Red Hat",
+            "severity": "high",
+            "baseScore": 7.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-14T21:38:38.644743Z"
+          }
+        ],
+        "description": "## Overview\n[undici](https://www.npmjs.org/package/undici) is an An HTTP/1.1 client, written from scratch for Node.js\n\nAffected versions of this package are vulnerable to Uncaught Exception through improper validation of the `server_max_window_bits` parameter in the permessage-deflate extension. An attacker can cause the process to terminate unexpectedly by sending a maliciously crafted value outside the valid range, which triggers an unhandled exception when the client attempts to create a zlib InflateRaw instance.\n## Remediation\nUpgrade `undici` to version 6.24.0, 7.24.0 or higher.\n## References\n- [GitHub Commit](https://github.com/nodejs/undici/commit/e9e2997ed18bff6ae389712d5f0e169f8a6546a0)\n- [HackerOne Report](https://hackerone.com/reports/3487486)\n",
+        "epssDetails": {
+          "percentile": "0.40418",
+          "probability": "0.00186",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-2229"
+          ],
+          "CWE": [
+            "CWE-248"
+          ],
+          "GHSA": [
+            "GHSA-v9p9-hfj2-hcw8"
+          ]
+        },
+        "packageName": "undici",
+        "proprietary": false,
+        "creationTime": "2026-03-13T09:28:28.965114Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-12T22:39:04Z",
+        "exploitDetails": {
+          "sources": [
+            "Snyk"
+          ],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Proof of Concept",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Proof of Concept",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-03-13T09:28:29.168834Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-03-14T21:38:38.644743Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "high",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "miniflare@4.20250604.1",
+          "undici@5.29.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.9.5",
+          "miniflare@4.20250712.0",
+          "undici@7.24.7"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "undici",
+        "version": "5.29.0"
+      },
+      {
+        "id": "SNYK-JS-UNDICI-15518072",
+        "title": "CRLF Injection",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:L/I:L/A:N",
+        "credit": [
+          "Unknown"
+        ],
+        "semver": {
+          "vulnerable": [
+            "<6.24.0",
+            ">=7.0.0-alpha.1 <7.24.0"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "6.24.0",
+          "7.24.0"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "medium",
+        "cvssScore": 5.1,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "undici",
+        "references": [
+          {
+            "url": "https://github.com/nodejs/undici/commit/e43e898603dd5e0c14a75b08b83257598d664a39",
+            "title": "GitHub Commit"
+          },
+          {
+            "url": "https://hackerone.com/reports/3487198",
+            "title": "HackerOne Report"
+          },
+          {
+            "url": "https://bugzilla.redhat.com/show_bug.cgi?id=2447141",
+            "title": "Red Hat Bugzilla Bug"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:L",
+            "cvssV3BaseScore": 6.5,
+            "modificationTime": "2026-03-14T21:41:39.234482Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:N/PR:L/UI:P/VC:L/VI:L/VA:N/SC:N/SI:N/SA:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 5.1,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-03-13T17:36:32.691892Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:U/C:L/I:L/A:N",
+            "assigner": "Snyk",
+            "severity": "medium",
+            "baseScore": 4.6,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-13T17:36:32.691892Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:R/S:C/C:L/I:L/A:L",
+            "assigner": "Red Hat",
+            "severity": "medium",
+            "baseScore": 6.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-03-14T21:41:39.234482Z"
+          }
+        ],
+        "description": "## Overview\n[undici](https://www.npmjs.org/package/undici) is an An HTTP/1.1 client, written from scratch for Node.js\n\nAffected versions of this package are vulnerable to CRLF Injection via the `upgrade` option of the `client.request()` function. An attacker can inject malicious data into HTTP headers or prematurely terminate HTTP requests by sending specially crafted input, potentially leading to unauthorized information disclosure or bypassing of security controls.\n## Remediation\nUpgrade `undici` to version 6.24.0, 7.24.0 or higher.\n## References\n- [GitHub Commit](https://github.com/nodejs/undici/commit/e43e898603dd5e0c14a75b08b83257598d664a39)\n- [HackerOne Report](https://hackerone.com/reports/3487198)\n- [Red Hat Bugzilla Bug](https://bugzilla.redhat.com/show_bug.cgi?id=2447141)\n",
+        "epssDetails": {
+          "percentile": "0.00948",
+          "probability": "0.00009",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-1527"
+          ],
+          "CWE": [
+            "CWE-93"
+          ]
+        },
+        "packageName": "undici",
+        "proprietary": false,
+        "creationTime": "2026-03-13T09:32:10.572077Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-03-12T20:17:18Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-03-13T09:32:10.798738Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-03-14T21:41:39.234482Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "medium",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "miniflare@4.20250604.1",
+          "undici@5.29.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.9.5",
+          "miniflare@4.20250712.0",
+          "undici@7.24.7"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "undici",
+        "version": "5.29.0"
+      },
+      {
+        "id": "SNYK-JS-WRANGLER-15046269",
+        "title": "Improper Input Validation",
+        "CVSSv3": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:H/A:H",
+        "credit": [
+          "kny4hacker"
+        ],
+        "semver": {
+          "vulnerable": [
+            ">=2.0.15 <3.114.17",
+            ">=4.0.0 <4.59.1"
+          ]
+        },
+        "exploit": "Not Defined",
+        "fixedIn": [
+          "3.114.17",
+          "4.59.1"
+        ],
+        "patches": [],
+        "insights": {
+          "triageAdvice": null
+        },
+        "language": "js",
+        "severity": "high",
+        "cvssScore": 7.7,
+        "functions": [],
+        "malicious": false,
+        "isDisputed": false,
+        "moduleName": "wrangler",
+        "references": [
+          {
+            "url": "https://github.com/cloudflare/workers-sdk/commit/6d5557ba22fba7d65193276a94cb5b54ead521d9",
+            "title": "GitHub Commit"
+          }
+        ],
+        "cvssDetails": [
+          {
+            "assigner": "NVD",
+            "severity": "critical",
+            "cvssV3Vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+            "cvssV3BaseScore": 9.9,
+            "modificationTime": "2026-01-28T01:19:13.380884Z"
+          }
+        ],
+        "cvssSources": [
+          {
+            "type": "primary",
+            "vector": "CVSS:4.0/AV:N/AC:L/AT:P/PR:L/UI:N/VC:H/VI:H/VA:H/SC:L/SI:L/SA:N",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 7.7,
+            "cvssVersion": "4.0",
+            "modificationTime": "2026-01-21T11:52:27.439967Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:H/PR:L/UI:N/S:C/C:H/I:H/A:H",
+            "assigner": "Snyk",
+            "severity": "high",
+            "baseScore": 8.5,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-21T11:52:27.439967Z"
+          },
+          {
+            "type": "secondary",
+            "vector": "CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:C/C:H/I:H/A:H",
+            "assigner": "NVD",
+            "severity": "critical",
+            "baseScore": 9.9,
+            "cvssVersion": "3.1",
+            "modificationTime": "2026-01-28T01:19:13.380884Z"
+          }
+        ],
+        "description": "## Overview\n[wrangler](https://www.npmjs.org/package/wrangler) is a Command-line interface for all things Cloudflare Workers\n\nAffected versions of this package are vulnerable to Improper Input Validation via the `wrangler pages deploy` command when the `--commit-hash` parameter is passed directly to a shell command without proper validation or sanitization. An attacker can execute arbitrary system commands by supplying crafted input to the `--commit-hash` parameter.\n\n**Note:**\n\nThis is only exploitable if the `--commit-hash` parameter is attacker-controlled, such as in CI/CD environments where it is populated from untrusted sources.\n## Remediation\nUpgrade `wrangler` to version 3.114.17, 4.59.1 or higher.\n## References\n- [GitHub Commit](https://github.com/cloudflare/workers-sdk/commit/6d5557ba22fba7d65193276a94cb5b54ead521d9)\n",
+        "epssDetails": {
+          "percentile": "0.15703",
+          "probability": "0.00051",
+          "modelVersion": "v2025.03.14"
+        },
+        "identifiers": {
+          "CVE": [
+            "CVE-2026-0933"
+          ],
+          "CWE": [
+            "CWE-20"
+          ]
+        },
+        "packageName": "wrangler",
+        "proprietary": false,
+        "creationTime": "2026-01-21T11:52:27.188920Z",
+        "functions_new": [],
+        "alternativeIds": [],
+        "disclosureTime": "2026-01-20T23:45:12.535000Z",
+        "exploitDetails": {
+          "sources": [],
+          "maturityLevels": [
+            {
+              "type": "secondary",
+              "level": "Not Defined",
+              "format": "CVSSv3"
+            },
+            {
+              "type": "primary",
+              "level": "Not Defined",
+              "format": "CVSSv4"
+            }
+          ]
+        },
+        "packageManager": "npm",
+        "publicationTime": "2026-01-21T11:52:27.412656Z",
+        "severityBasedOn": "CVSS",
+        "modificationTime": "2026-01-28T01:19:13.380884Z",
+        "socialTrendAlert": false,
+        "severityWithCritical": "high",
+        "from": [
+          "mail-worker@0.0.0",
+          "@cloudflare/vite-plugin@1.6.0",
+          "wrangler@4.20.0"
+        ],
+        "upgradePath": [
+          false,
+          "@cloudflare/vite-plugin@1.20.3",
+          "wrangler@4.59.1"
+        ],
+        "isUpgradable": true,
+        "isPatchable": false,
+        "name": "wrangler",
+        "version": "4.20.0"
+      }
+    ],
+    "ok": false,
+    "dependencyCount": 240,
+    "org": "nap0o",
+    "policy": "# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.\nversion: v1.25.1\nignore: {}\npatch: {}\n",
+    "isPrivate": true,
+    "licensesPolicy": {
+      "severities": {},
+      "orgLicenseRules": {
+        "AGPL-1.0": {
+          "licenseType": "AGPL-1.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "AGPL-3.0": {
+          "licenseType": "AGPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "Artistic-1.0": {
+          "licenseType": "Artistic-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "Artistic-2.0": {
+          "licenseType": "Artistic-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CDDL-1.0": {
+          "licenseType": "CDDL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "CPOL-1.02": {
+          "licenseType": "CPOL-1.02",
+          "severity": "high",
+          "instructions": ""
+        },
+        "EPL-1.0": {
+          "licenseType": "EPL-1.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "GPL-2.0": {
+          "licenseType": "GPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "GPL-3.0": {
+          "licenseType": "GPL-3.0",
+          "severity": "high",
+          "instructions": ""
+        },
+        "LGPL-2.0": {
+          "licenseType": "LGPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-2.1": {
+          "licenseType": "LGPL-2.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "LGPL-3.0": {
+          "licenseType": "LGPL-3.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-1.1": {
+          "licenseType": "MPL-1.1",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MPL-2.0": {
+          "licenseType": "MPL-2.0",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "MS-RL": {
+          "licenseType": "MS-RL",
+          "severity": "medium",
+          "instructions": ""
+        },
+        "SimPL-2.0": {
+          "licenseType": "SimPL-2.0",
+          "severity": "high",
+          "instructions": ""
+        }
+      }
+    },
+    "packageManager": "npm",
+    "ignoreSettings": {
+      "adminOnly": false,
+      "reasonRequired": false,
+      "disregardFilesystemIgnores": false
+    },
+    "summary": "6 vulnerable dependency paths",
+    "remediation": {
+      "unresolved": [],
+      "upgrade": {
+        "@cloudflare/vite-plugin@1.6.0": {
+          "upgradeTo": "@cloudflare/vite-plugin@1.20.3",
+          "upgrades": [
+            "wrangler@4.20.0",
+            "undici@5.29.0",
+            "undici@5.29.0",
+            "undici@5.29.0",
+            "undici@5.29.0",
+            "undici@5.29.0"
+          ],
+          "vulns": [
+            "SNYK-JS-WRANGLER-15046269",
+            "SNYK-JS-UNDICI-14943963",
+            "SNYK-JS-UNDICI-15518061",
+            "SNYK-JS-UNDICI-15518068",
+            "SNYK-JS-UNDICI-15518070",
+            "SNYK-JS-UNDICI-15518072"
+          ]
+        }
+      },
+      "patch": {},
+      "ignore": {},
+      "pin": {}
+    },
+    "filesystemPolicy": false,
+    "filtered": {
+      "ignore": [],
+      "patch": []
+    },
+    "uniqueCount": 6,
+    "projectName": "mail-worker",
+    "foundProjectCount": 1,
+    "displayTargetFile": "mail-worker/package-lock.json",
+    "hasUnknownVersions": false,
+    "path": "/home/runner/work/cloud-mail/cloud-mail"
+  }
+]
